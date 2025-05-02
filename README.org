@@ -1,0 +1,85 @@
+#+TITLE: CSV to PPK2 Converter (~csv2ppk2-converter.py~)
+#+AUTHOR: Silvano Cortesi
+#+DATE: 02.05.2025
+#+LICENSE: MIT
+
+* Overview
+This Python script converts time-series data from a CSV file into the ~.ppk2~ format used by the nRF Connect Power Profiler application. This allows visualizing and analyzing current consumption data from various sources (e.g. logged data from using the python API of the Nordic Power Profiler or from other measurement devices, simulations) directly within the [[https://github.com/NordicSemiconductor/pc-nrfconnect-ppk][Power Profiler application]].
+
+The script reads timestamp and current values from specified columns in your CSV, processes them, and packages them into the required ~.ppk2~ structure, including metadata (~metadata.json~), raw sample data (~session.raw~), and a minimap overview (~minimap.raw~).
+
+* Requirements
+- *Python:* The script is tested with Python 3.13.3
+
+* Usage
+Run the script from your terminal using the following command structure:
+
+#+begin_src bash
+python csv2ppk2-converter.py --csv-input <path_to_csv> --start-time <iso_time> --timestamp-column <col_name_or_idx> --current-column <col_name_or_idx> --output <output_ppk2_file>
+#+end_src
+
+** Command-Line Options
+#+begin_src text
+usage: csv2ppk2-converter.py [-h] --csv-input CSV_INPUT --start-time START_TIME --timestamp-column TIMESTAMP_COLUMN
+                   --current-column CURRENT_COLUMN --output OUTPUT
+
+Convert CSV data (with specified timestamp and current columns) to Nordic PPK2 format.
+
+options:
+  -h, --help            show this help message and exit
+  --csv-input CSV_INPUT
+                        Path to the input CSV file. (default: None)
+  --start-time START_TIME
+                        System start time of the recording in ISO 8601 format (e.g., '2023-10-27T15:30:00Z' or
+                        '2023-10-27T17:30:00+02:00'). Assumed local time if no timezone provided. (default:
+                        None)
+  --timestamp-column TIMESTAMP_COLUMN
+                        Name or 0-based index of the timestamp column (in seconds) in the CSV. (default: None)
+  --current-column CURRENT_COLUMN
+                        Name or 0-based index of the current column (in ampere) in the CSV. (default: None)
+  --output OUTPUT       Path for the output PPK2 file (e.g., my_capture.ppk2). (default: None)
+#+end_src
+
+** Input CSV Format Requirements
+The input data must be a valid CSV file, with at least two columns: One for timestamps and one for current.
+
+- *Timestamp Column:* Values should be numeric, representing time in seconds elapsed since the beginning of the data capture within the CSV. The first timestamp should ideally be 0 or very close to it.
+- *Current Column:* Values should be numeric, representing current in Amperes (A).
+
+- *Sampling Rate:* The script typically infers the sampling rate (~samplesPerSecond~) from the differences between consecutive timestamps in the CSV. It assumes a constant sampling rate. Significant variations in time steps might lead to inaccurate representation or errors.
+
+- *Headers:* The script can identify columns by header name (string) or by 0-based index (integer). If using names, ensure the CSV file has a header row.
+
+** Output .ppk2 Format Details
+The generated ~.ppk2~ file is a standard ZIP archive containing the following files:
+
+- *metadata.json:*
+  - *Purpose:* Stores essential information about the recording session.
+  - *Format:* JSON.
+  - *Content:*
+    - ~metadata~: (Object)
+      - ~samplesPerSecond~: (Number) The sampling rate calculated from the CSV timestamps (samples per second).
+      - ~startSystemTime~: (Number) The --start-time argument converted into milliseconds since the Unix epoch (e.g., 1720452539595.64). Seems to currently be unused in the power profiler application.
+      - ~formatVersion~: (Number) The internal version number for the PPK2 format (currently 2).
+
+- *session.raw:*
+  - *Purpose:* Stores the raw, high-resolution measurement data stream.
+  - *Format:* Raw binary data, consisting of sequential data frames.
+  - *Frame Structure (6 bytes per sample):*
+    - *Bytes 0-3:* Current measurement. Stored as a Float32 (single-precision float), little-endian.
+      - *Unit:* Microamperes (µA). The script converts the input Ampere values from the CSV (current column * 1,000,000).
+    - *Bytes 4-5:* Digital channel states. Stored as a Uint16 (unsigned 16-bit integer), little-endian.
+      - Note: As typically no digital channels are contained in power logs from other devices, this script will populate this field with a default value for every sample (e.g. 0xAAAA). All digital channels will appear flat/inactive in the Power Profiler. However, if this is needed, the script can be adjusted accordingly.
+
+- *minimap.raw:*
+  - *Purpose:* Stores pre-processed, downsampled data used by the Power Profiler application to quickly render the overview ("minimap") of the entire recording without reading the full session.raw.
+  - *Format:* JSON.
+  - *Content:* A JSON object containing internal state used by the original Power Profiler's FoldingBuffer (like maxNumberOfElements, numberOfTimesToFold, lastElementFoldCount) and the actual downsampled data:
+    - ~data~: (Object)
+      - ~length~: (Number) Number of valid downsampled points.
+      - ~min~: (Array of ~{x: number, y: number}~) Array containing minimum current values for aggregated time intervals.
+        - ~x~: Timestamp in microseconds (µs) relative to the start of the recording for the interval.
+        - ~y~: Minimum current in nanoamperes (nA) for the interval.
+      - ~max~: (Array of ~{x: number, y: number}~) Array containing maximum current values for aggregated time intervals.
+        - ~x~: Timestamp in microseconds (µs) (same as corresponding min entry).
+        - ~y~: Maximum current in nanoamperes (nA) for the interval.
