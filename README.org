@@ -1,17 +1,17 @@
-#+TITLE: CSV to PPK2 Converter (~csv2ppk2-converter.py~)
+#+TITLE: CSV and DLog to PPK2 Converter
 #+AUTHOR: Silvano Cortesi
 #+DATE: 02.05.2025
 #+LICENSE: MIT
 
 * Overview
-This Python script converts time-series data from a CSV file into the ~.ppk2~ format used by the nRF Connect Power Profiler application. This allows visualizing and analyzing current consumption data from various sources (e.g. logged data from using the python API of the Nordic Power Profiler or from other measurement devices, simulations) directly within the [[https://github.com/NordicSemiconductor/pc-nrfconnect-ppk][Power Profiler application]].
-
-The script reads timestamp and current values from specified columns in your CSV, processes them, and packages them into the required ~.ppk2~ structure, including metadata (~metadata.json~), raw sample data (~session.raw~), and a minimap overview (~minimap.raw~).
+This Python scripts converts time-series data from CSV or DLog files into the ~.ppk2~ format used by the nRF Connect Power Profiler application. This allows visualizing and analyzing current consumption data from various sources (e.g. logged data from using the python API of the Nordic Power Profiler or from other measurement devices, simulations) directly within the [[https://github.com/NordicSemiconductor/pc-nrfconnect-ppk][Power Profiler application]].
 
 * Requirements
 - *Python:* The script is tested with Python 3.13.3
 
-* Usage
+* Usage CSV converter
+The script reads timestamp and current values from specified columns in your CSV, processes them, and packages them into the required ~.ppk2~ structure, including metadata (~metadata.json~), raw sample data (~session.raw~), and a minimap overview (~minimap.raw~).
+
 Run the script from your terminal using the following command structure:
 
 #+begin_src bash
@@ -49,8 +49,42 @@ The input data must be a valid CSV file, with at least two columns: One for time
 - *Sampling Rate:* The script typically infers the sampling rate (~samplesPerSecond~) from the differences between consecutive timestamps in the CSV. It assumes a constant sampling rate. Significant variations in time steps might lead to inaccurate representation or errors.
 
 - *Headers:* The script can identify columns by header name (string) or by 0-based index (integer). If using names, ensure the CSV file has a header row.
+* Usage DLog converter
+The script reads the given DLog script, processes them, extracts the chosen channel, and packages them into the required ~.ppk2~ structure, including metadata (~metadata.json~), raw sample data (~session.raw~), and a minimap overview (~minimap.raw~).
 
-** Output .ppk2 Format Details
+The subcommand ~--list-channels~ can be used to extract channel informations from the dlog file.
+
+Run the script from your terminal using the following command structure:
+
+#+begin_src bash
+python dlot2ppk2-converter.py --dlog-input <path_to_dlog> --start-time <iso_time> --channel-id <id_of_the_chosen_channel> --output <output_ppk2_file>
+#+end_src
+
+** Command-Line Options
+#+begin_src text
+usage: dlog2ppk2-converter.py [-h] --dlog-input DLOG_INPUT [--list-channels] [--start-time START_TIME]
+                              [--channel-id CHANNEL_ID] [--output OUTPUT]
+
+Convert Keysight DLog data to Nordic PPK2 format, or list available channels.
+
+options:
+  -h, --help            show this help message and exit
+  --dlog-input DLOG_INPUT
+                        Path to the input DLog file (.dlog or .dlog.xz). (default: None)
+  --list-channels       List available channels (ID, Slot, Unit, Model) present in the DLog file and exit.
+                        (default: False)
+  --start-time START_TIME
+                        System start time of the recording in ISO 8601 format (e.g., '2023-10-27T15:30:00Z').
+                        Assumed local time if no timezone provided. If no time provided, current system time is
+                        taken. (default: None)
+  --channel-id CHANNEL_ID
+                        Required for conversion: The ID of the channel containing the current (A) measurement to
+                        use. (default: None)
+  --output OUTPUT       Required for conversion: Path for the output PPK2 file (e.g., my_capture.ppk2).
+                        (default: None)
+#+end_src
+
+* Output .ppk2 Format Details
 The generated ~.ppk2~ file is a standard ZIP archive containing the following files:
 
 - *metadata.json:*
