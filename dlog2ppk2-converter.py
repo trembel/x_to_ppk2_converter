@@ -1,4 +1,16 @@
 #!/usr/bin/env python
+
+"""
+dlog2ppk2-converter.py
+A python script to convert DLog current measurements into the PPK2 format used by the Nordic Power Profiler application.
+
+Copyright (C) 2025 Silvano Cortesi
+
+This work is licensed under the terms of the MIT license.  For a copy, see the
+included LICENSE file or <https://opensource.org/licenses/MIT>.
+---------------------------------
+"""
+
 import struct
 import json
 import zipfile
