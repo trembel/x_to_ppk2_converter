@@ -59,7 +59,7 @@ The subcommand ~--list-channels~ can be used to extract channel informations fro
 Run the script from your terminal using the following command structure:
 
 #+begin_src bash
-python dlot2ppk2-converter.py --dlog-input <path_to_dlog> --start-time <iso_time> --channel-id <id_of_the_chosen_channel> --output <output_ppk2_file>
+python dlog2ppk2-converter.py --dlog-input <path_to_dlog> --start-time <iso_time> --channel-id <id_of_the_chosen_channel> --output <output_ppk2_file>
 #+end_src
 
 *** Command-Line Options
