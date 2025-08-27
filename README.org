@@ -4,6 +4,9 @@
 #+LICENSE: MIT
 
 ** Overview
+
+*Web Interface Available:* For a user-friendly alternative, try the [[https://trembel.github.io/x_to_ppk2_converter/][PPK2 Web Converter]] - no Python installation required!
+
 This Python scripts converts time-series data from CSV or DLog files into the ~.ppk2~ format used by the nRF Connect Power Profiler application. This allows visualizing and analyzing current consumption data from various sources (e.g. logged data from using the python API of the Nordic Power Profiler or from other measurement devices, simulations) directly within the [[https://github.com/NordicSemiconductor/pc-nrfconnect-ppk][Power Profiler application]].
 
 If you search for a script to convert DLog files to CSV, use https://github.com/derf/dlog-viewer (which highly influenced this scripts ;) ).
